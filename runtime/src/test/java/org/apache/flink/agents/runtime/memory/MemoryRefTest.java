@@ -20,6 +20,7 @@ package org.apache.flink.agents.runtime.memory;
 import org.apache.flink.agents.api.configuration.ReadableConfiguration;
 import org.apache.flink.agents.api.context.MemoryObject;
 import org.apache.flink.agents.api.context.MemoryRef;
+import org.apache.flink.agents.api.context.MemoryUpdate;
 import org.apache.flink.agents.api.context.RunnerContext;
 import org.apache.flink.agents.api.metrics.FlinkAgentsMetricGroup;
 import org.apache.flink.agents.api.resource.Resource;
@@ -63,9 +64,11 @@ public class MemoryRefTest {
     /** Mock RunnerContext for testing resolve(). */
     static class MockRunnerContext implements RunnerContext {
         private final MemoryObject memoryObject;
+        private final List<MemoryUpdate> memoryUpdates;
 
-        MockRunnerContext(MemoryObject memoryObject) {
+        MockRunnerContext(MemoryObject memoryObject, List<MemoryUpdate> memoryUpdates) {
             this.memoryObject = memoryObject;
+            this.memoryUpdates = memoryUpdates;
         }
 
         @Override
@@ -95,12 +98,17 @@ public class MemoryRefTest {
         public ReadableConfiguration getConfig() {
             return null;
         }
+
+        @Override
+        public List<MemoryUpdate> getAllMemoryUpdates() {
+            return List.copyOf(memoryUpdates);
+        }
     }
 
     @BeforeEach
     void setUp() throws Exception {
         ForTestMemoryMapState<MemoryObjectImpl.MemoryItem> mapState = new ForTestMemoryMapState<>();
-        memory = new MemoryObjectImpl(mapState, MemoryObjectImpl.ROOT_KEY);
+        memory = new MemoryObjectImpl(mapState, MemoryObjectImpl.ROOT_KEY, new LinkedList<>());
     }
 
     @Test
@@ -151,7 +159,7 @@ public class MemoryRefTest {
 
     @Test
     void testMemoryRefResolve() throws Exception {
-        MockRunnerContext ctx = new MockRunnerContext(memory);
+        MockRunnerContext ctx = new MockRunnerContext(memory, new LinkedList<>());
 
         Map<String, Object> testData = new HashMap<>();
         testData.put("my_int", 1);

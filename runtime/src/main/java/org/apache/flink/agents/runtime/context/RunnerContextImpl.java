@@ -20,6 +20,7 @@ package org.apache.flink.agents.runtime.context;
 import org.apache.flink.agents.api.Event;
 import org.apache.flink.agents.api.configuration.ReadableConfiguration;
 import org.apache.flink.agents.api.context.MemoryObject;
+import org.apache.flink.agents.api.context.MemoryUpdate;
 import org.apache.flink.agents.api.context.RunnerContext;
 import org.apache.flink.agents.api.resource.Resource;
 import org.apache.flink.agents.api.resource.ResourceType;
@@ -32,6 +33,7 @@ import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.core.JsonProcessin
 import org.apache.flink.util.Preconditions;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -45,6 +47,7 @@ public class RunnerContextImpl implements RunnerContext {
     protected final FlinkAgentsMetricGroupImpl agentMetricGroup;
     protected final Runnable mailboxThreadChecker;
     protected final AgentPlan agentPlan;
+    protected final List<MemoryUpdate> memoryUpdates;
     protected String actionName;
 
     public RunnerContextImpl(
@@ -56,6 +59,7 @@ public class RunnerContextImpl implements RunnerContext {
         this.agentMetricGroup = agentMetricGroup;
         this.mailboxThreadChecker = mailboxThreadChecker;
         this.agentPlan = agentPlan;
+        this.memoryUpdates = new LinkedList<>();
     }
 
     public void setActionName(String actionName) {
@@ -100,7 +104,8 @@ public class RunnerContextImpl implements RunnerContext {
     @Override
     public MemoryObject getShortTermMemory() throws Exception {
         mailboxThreadChecker.run();
-        return new MemoryObjectImpl(store, MemoryObjectImpl.ROOT_KEY, mailboxThreadChecker);
+        return new MemoryObjectImpl(
+                store, MemoryObjectImpl.ROOT_KEY, mailboxThreadChecker, memoryUpdates);
     }
 
     @Override
@@ -118,5 +123,13 @@ public class RunnerContextImpl implements RunnerContext {
 
     public String getActionName() {
         return actionName;
+    }
+
+    @Override
+    public List<MemoryUpdate> getAllMemoryUpdates() {
+        mailboxThreadChecker.run();
+        List<MemoryUpdate> memoryUpdatesCopy = List.copyOf(memoryUpdates);
+        memoryUpdates.clear();
+        return memoryUpdatesCopy;
     }
 }
