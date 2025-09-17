@@ -77,4 +77,13 @@ public interface ActionStateStore {
     default Object getRecoveryMarker() {
         return null;
     }
+
+    /**
+     * Set the recovery marker to restore the state store to a previous recovery point.
+     *
+     * @param recoveryMarker the recovery marker to restore from
+     */
+    default void setRecoveryMarker(Object recoveryMarker) {
+        // Default implementation does nothing
+    }
 }
